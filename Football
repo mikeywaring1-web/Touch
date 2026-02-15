@@ -1,144 +1,199 @@
--- =============================================
---  SoccerBall Teleporter GUI (MOBILE + PC)
---  Drag with finger on mobile • GUI stays forever
---  Paste entire code into Command Bar / Output
--- =============================================
+-- Modern SoccerBall Teleporter GUI (2025+ style)
+-- Paste into executor / command bar
 
 local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-
+local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
-local playerGui = player:WaitForChild("PlayerGui")
+local playerGui = player:WaitForChild("PlayerGui", 10)
 
--- Remove old GUI
-if playerGui:FindFirstChild("SoccerBallTeleporterGui") then
-    playerGui.SoccerBallTeleporterGui:Destroy()
+-- Clean up old GUI
+if playerGui:FindFirstChild("ModernSoccerGui") then
+    playerGui.ModernSoccerGui:Destroy()
 end
 
-local screenGui = Instance.new("ScreenGui")
-screenGui.Name = "SoccerBallTeleporterGui"
-screenGui.ResetOnSpawn = false
-screenGui.Parent = playerGui
+local sg = Instance.new("ScreenGui")
+sg.Name = "ModernSoccerGui"
+sg.ResetOnSpawn = false
+sg.Parent = playerGui
 
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 300, 0, 150)
-frame.Position = UDim2.new(0.5, -150, 0.4, 0)
-frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-frame.BorderSizePixel = 0
-frame.Parent = screenGui
+local main = Instance.new("Frame")
+main.Size = UDim2.new(0, 320, 0, 200)
+main.Position = UDim2.new(0.5, -160, 0.5, -100)
+main.BackgroundColor3 = Color3.fromRGB(18, 18, 28)
+main.BorderSizePixel = 0
+main.ClipsDescendants = true
+main.Active = true
+main.Draggable = true
+main.Parent = sg
 
-Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+local uiCorner = Instance.new("UICorner")
+uiCorner.CornerRadius = UDim.new(0, 16)
+uiCorner.Parent = main
 
--- Draggable Title Bar
+local uiStroke = Instance.new("UIStroke")
+uiStroke.Color = Color3.fromRGB(80, 120, 255)
+uiStroke.Transparency = 0.65
+uiStroke.Thickness = 1.5
+uiStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+uiStroke.Parent = main
+
+-- Title bar
+local titleBar = Instance.new("Frame")
+titleBar.Size = UDim2.new(1, 0, 0, 44)
+titleBar.BackgroundColor3 = Color3.fromRGB(28, 28, 44)
+titleBar.BorderSizePixel = 0
+titleBar.Parent = main
+
+local titleCorner = Instance.new("UICorner")
+titleCorner.CornerRadius = UDim.new(0, 16)
+titleCorner.Parent = titleBar
+
 local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-title.Text = "⚽ SoccerBall Teleporter  ←  Drag me"
-title.TextColor3 = Color3.fromRGB(255, 255, 100)
-title.TextScaled = true
+title.Size = UDim2.new(1, -60, 1, 0)
+title.Position = UDim2.new(0, 16, 0, 0)
+title.BackgroundTransparency = 1
 title.Font = Enum.Font.GothamBold
-title.Parent = frame
+title.Text = "Soccer Ball Teleporter"
+title.TextColor3 = Color3.fromRGB(220, 220, 255)
+title.TextSize = 18
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = titleBar
 
-Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
+-- Close button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 32, 0, 32)
+closeBtn.Position = UDim2.new(1, -40, 0, 6)
+closeBtn.BackgroundColor3 = Color3.fromRGB(235, 70, 70)
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.new(1,1,1)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 24
+closeBtn.Parent = titleBar
 
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 8)
+closeCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+    sg:Destroy()
+end)
+
+-- Status label
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, 0, 0, 30)
-status.Position = UDim2.new(0, 0, 0, 45)
+status.Size = UDim2.new(1, -32, 0, 36)
+status.Position = UDim2.new(0, 16, 0, 54)
 status.BackgroundTransparency = 1
+status.Font = Enum.Font.GothamSemibold
 status.Text = "Ready"
-status.TextColor3 = Color3.fromRGB(180, 180, 180)
-status.TextScaled = true
-status.Font = Enum.Font.Gotham
-status.Parent = frame
+status.TextColor3 = Color3.fromRGB(140, 200, 255)
+status.TextSize = 17
+status.TextXAlignment = Enum.TextXAlignment.Left
+status.Parent = main
 
-local button = Instance.new("TextButton")
-button.Size = UDim2.new(0.9, 0, 0, 55)
-button.Position = UDim2.new(0.05, 0, 0, 80)
-button.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
-button.Text = "TELEPORT SOCCERBALL TO ME"
-button.TextColor3 = Color3.new(1, 1, 1)
-button.TextScaled = true
-button.Font = Enum.Font.GothamBold
-button.Parent = frame
+-- Big action button
+local btn = Instance.new("TextButton")
+btn.Size = UDim2.new(1, -32, 0, 64)
+btn.Position = UDim2.new(0, 16, 1, -84)
+btn.BackgroundColor3 = Color3.fromRGB(60, 160, 255)
+btn.Text = "Teleport Ball → Me"
+btn.TextColor3 = Color3.new(1,1,1)
+btn.Font = Enum.Font.GothamBold
+btn.TextSize = 20
+btn.Parent = main
 
-Instance.new("UICorner", button).CornerRadius = UDim.new(0, 10)
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 12)
+btnCorner.Parent = btn
 
--- ==================== MOBILE + PC DRAG CODE ====================
-local dragging = false
-local dragInput
-local dragStart
-local startPos
+local btnStroke = Instance.new("UIStroke")
+btnStroke.Color = Color3.fromRGB(100, 180, 255)
+btnStroke.Thickness = 2
+btnStroke.Transparency = 0.4
+btnStroke.Parent = btn
 
-local function update(input)
-    local delta = input.Position - dragStart
-    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+-- Button animations
+local function playClickAnim()
+    local tweenInfo = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    local scaleDown = TweenService:Create(btn, tweenInfo, {Size = UDim2.new(1, -40, 0, 60)})
+    local colorDim  = TweenService:Create(btn, tweenInfo, {BackgroundColor3 = Color3.fromRGB(40, 120, 220)})
+    
+    scaleDown:Play()
+    colorDim:Play()
+    
+    scaleDown.Completed:Connect(function()
+        local scaleBack = TweenService:Create(btn, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+            Size = UDim2.new(1, -32, 0, 64)
+        })
+        local colorBack = TweenService:Create(btn, TweenInfo.new(0.22), {
+            BackgroundColor3 = Color3.fromRGB(60, 160, 255)
+        })
+        
+        scaleBack:Play()
+        colorBack:Play()
+    end)
 end
-
-title.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-    end
-end)
-
-title.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragging = false
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        update(input)
-        dragStart = input.Position   -- makes drag super smooth on mobile
-    end
-end)
--- ============================================================
 
 -- Teleport logic
-button.MouseButton1Click:Connect(function()
-    button.Active = false
-    button.Text = "SEARCHING..."
-    button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    status.Text = "Looking for SoccerBall..."
+local function doTeleport()
+    local char = player.Character
+    if not char then
+        status.Text = "No character found"
+        status.TextColor3 = Color3.fromRGB(255, 120, 120)
+        task.delay(2.2, function()
+            if status.Text == "No character found" then
+                status.Text = "Ready"
+                status.TextColor3 = Color3.fromRGB(140, 200, 255)
+            end
+        end)
+        return
+    end
 
-    task.wait(0.2)
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return end
 
-    local character = player.Character or player.CharacterAdded:Wait()
-    local root = character:WaitForChild("HumanoidRootPart")
-
-    local found = {}
-    for _, obj in ipairs(workspace:GetDescendants()) do
-        if obj:IsA("BasePart") and obj.Name == "SoccerBall" then
-            table.insert(found, obj)
+    local count = 0
+    for _, part in workspace:GetDescendants() do
+        if part:IsA("BasePart") and part.Name == "SoccerBall" then
+            part.CFrame = hrp.CFrame * CFrame.new(0, 5.5, 0)
+            part.Velocity = Vector3.zero
+            part.RotVelocity = Vector3.zero
+            count += 1
         end
     end
 
-    if #found == 0 then
-        status.Text = "No SoccerBall found!"
-        button.Text = "NOT FOUND"
-        button.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    if count == 0 then
+        status.Text = "No soccer balls found"
+        status.TextColor3 = Color3.fromRGB(255, 180, 100)
     else
-        for i, ball in ipairs(found) do
-            ball.CFrame = root.CFrame * CFrame.new(0, 5 + (i-1) * 2, 0)
-            ball.Velocity = Vector3.new(0, 0, 0)
-            if ball.Anchored then ball.Anchored = false end
-        end
-
-        status.Text = "Teleported " .. #found .. " SoccerBall(s)!"
-        button.Text = "DONE ✓"
-        button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+        status.Text = "Teleported " .. count .. " ball" .. (count == 1 and "" or "s")
+        status.TextColor3 = Color3.fromRGB(100, 255, 140)
     end
 
-    task.delay(2, function()
-        if button and button.Parent then
-            button.Text = "TELEPORT SOCCERBALL TO ME"
-            button.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+    task.delay(2.8, function()
+        if status.Text:find("Teleported") or status.Text:find("No soccer") then
             status.Text = "Ready"
-            button.Active = true
+            status.TextColor3 = Color3.fromRGB(140, 200, 255)
         end
     end)
+end
+
+btn.MouseButton1Click:Connect(function()
+    playClickAnim()
+    doTeleport()
 end)
 
-print("✅ SoccerBall Teleporter (Mobile + PC) loaded! Drag the title bar with finger or mouse.")
+-- Optional: subtle hover effect
+btn.MouseEnter:Connect(function()
+    TweenService:Create(btn, TweenInfo.new(0.18), {
+        BackgroundColor3 = Color3.fromRGB(80, 180, 255)
+    }):Play()
+end)
+
+btn.MouseLeave:Connect(function()
+    TweenService:Create(btn, TweenInfo.new(0.18), {
+        BackgroundColor3 = Color3.fromRGB(60, 160, 255)
+    }):Play()
+end)
+
+print("Modern Soccer Teleporter GUI loaded")
