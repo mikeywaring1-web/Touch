@@ -1,21 +1,23 @@
--- Modern SoccerBall Teleporter GUI - BUG-FIXED & RESPAWN-PROOF (2026)
+-- Modern SoccerBall Teleporter GUI - BUG-FREE + NO-CLIP TELEPORT (goes through walls/floors/anything)
 -- Paste into executor / command bar
 
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
 local player = Players.LocalPlayer
 
 local function createGUI()
     local playerGui = player:WaitForChild("PlayerGui", 8)
     if not playerGui then return end
 
-    -- Clean old GUI completely
+    -- Clean old GUI
     local old = playerGui:FindFirstChild("ModernSoccerGui")
     if old then old:Destroy() end
 
     local sg = Instance.new("ScreenGui")
     sg.Name = "ModernSoccerGui"
-    sg.ResetOnSpawn = false          -- CRITICAL: prevents auto-reset on death/respawn
+    sg.ResetOnSpawn = false
     sg.DisplayOrder = 15
     sg.Parent = playerGui
 
@@ -127,35 +129,54 @@ local function createGUI()
         end)
     end
 
-    -- Teleport logic (more robust)
+    -- Teleport logic (goes through anything + fixes sticking)
     local function doTeleport()
         playClickAnim()
 
         local char = player.Character
         if not char then
-            status.Text = "No character - wait a moment"
+            status.Text = "No character yet"
             status.TextColor3 = Color3.fromRGB(255, 180, 100)
-            task.delay(3, function() status.Text = "Ready" status.TextColor3 = Color3.fromRGB(140, 200, 255) end)
+            task.delay(3, function() if status then status.Text = "Ready" status.TextColor3 = Color3.fromRGB(140, 200, 255) end end)
             return
         end
 
-        local hrp = char:WaitForChild("HumanoidRootPart", 4)
+        local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart", 5)
         if not hrp then
-            status.Text = "No root part found"
+            status.Text = "No root part"
             status.TextColor3 = Color3.fromRGB(255, 120, 120)
-            task.delay(3, function() status.Text = "Ready" status.TextColor3 = Color3.fromRGB(140, 200, 255) end)
+            task.delay(3, function() if status then status.Text = "Ready" status.TextColor3 = Color3.fromRGB(140, 200, 255) end end)
             return
         end
+
+        local targetCFrame = hrp.CFrame * CFrame.new(0, 5.5, 0)  -- above head
 
         local count = 0
         for _, part in ipairs(workspace:GetDescendants()) do
             if part:IsA("BasePart") and part.Name == "SoccerBall" then
-                pcall(function()
-                    part.CFrame = hrp.CFrame * CFrame.new(0, 5.5, 0)
-                    part.Velocity = Vector3.new()
-                    part.RotVelocity = Vector3.new()
-                    count += 1
+                local wasAnchored = part.Anchored
+                local oldCanCollide = part.CanCollide
+
+                -- Make it ignore collisions temporarily
+                part.Anchored = false
+                part.CanCollide = false
+
+                -- Teleport (CFrame = ignores physics/collisions)
+                part.CFrame = targetCFrame + Vector3.new(0, (count * 2), 0)  -- slight stack offset if multiple
+
+                -- Clean velocity
+                part.Velocity = Vector3.new()
+                part.RotVelocity = Vector3.new()
+
+                -- Restore original state after tiny delay (physics settle)
+                task.delay(0.1, function()
+                    if part and part.Parent then
+                        part.CanCollide = oldCanCollide
+                        part.Anchored = wasAnchored
+                    end
                 end)
+
+                count += 1
             end
         end
 
@@ -163,11 +184,11 @@ local function createGUI()
             status.Text = "No soccer balls found"
             status.TextColor3 = Color3.fromRGB(255, 180, 100)
         else
-            status.Text = "Teleported " .. count .. " ball" .. (count == 1 and "" or "s")
+            status.Text = "Teleported " .. count .. " ball" .. (count == 1 and "" or "s") .. " (through anything!)"
             status.TextColor3 = Color3.fromRGB(100, 255, 140)
         end
 
-        task.delay(3.5, function()
+        task.delay(4, function()
             if status and status.Parent then
                 status.Text = "Ready"
                 status.TextColor3 = Color3.fromRGB(140, 200, 255)
@@ -177,7 +198,7 @@ local function createGUI()
 
     btn.MouseButton1Click:Connect(doTeleport)
 
-    -- Hover
+    -- Hover effect
     btn.MouseEnter:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.18), {BackgroundColor3 = Color3.fromRGB(80, 180, 255)}):Play()
     end)
@@ -186,19 +207,19 @@ local function createGUI()
         TweenService:Create(btn, TweenInfo.new(0.18), {BackgroundColor3 = Color3.fromRGB(60, 160, 255)}):Play()
     end)
 
-    print("Modern Soccer GUI loaded - should survive respawns now")
+    print("Modern Soccer GUI loaded - balls now teleport through walls/floors/everything")
     return sg
 end
 
 -- Initial creation
-local currentGUI = createGUI()
+createGUI()
 
--- Auto-recreate on character respawn (extra safety layer)
+-- Respawn-proof: recreate if GUI disappears
 player.CharacterAdded:Connect(function()
-    task.wait(1.2)  -- give time for PlayerGui to stabilize
+    task.wait(1.5)
     if not player.PlayerGui:FindFirstChild("ModernSoccerGui") then
-        currentGUI = createGUI()
+        createGUI()
     end
 end)
 
-print("GUI auto-recreate listener active")
+print("GUI auto-recreate on respawn active")
