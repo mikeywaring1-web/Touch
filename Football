@@ -1,0 +1,149 @@
+-- =============================================
+--  SoccerBall Teleporter GUI + DRAGGABLE
+--  GUI STAYS OPEN FOREVER (no auto-delete)
+--  Paste entire code into Command Bar / Output
+-- =============================================
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Remove old GUI if it exists
+if playerGui:FindFirstChild("SoccerBallTeleporterGui") then
+    playerGui.SoccerBallTeleporterGui:Destroy()
+end
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "SoccerBallTeleporterGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 300, 0, 150)
+frame.Position = UDim2.new(0.5, -150, 0.4, 0)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+frame.BorderSizePixel = 0
+frame.Parent = screenGui
+
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
+
+-- Draggable Title Bar
+local title = Instance.new("TextLabel")
+title.Size = UDim2.new(1, 0, 0, 40)
+title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+title.Text = "⚽ SoccerBall Teleporter  ←  Drag me"
+title.TextColor3 = Color3.fromRGB(255, 255, 100)
+title.TextScaled = true
+title.Font = Enum.Font.GothamBold
+title.Parent = frame
+
+Instance.new("UICorner", title).CornerRadius = UDim.new(0, 12)
+
+local status = Instance.new("TextLabel")
+status.Size = UDim2.new(1, 0, 0, 30)
+status.Position = UDim2.new(0, 0, 0, 45)
+status.BackgroundTransparency = 1
+status.Text = "Ready"
+status.TextColor3 = Color3.fromRGB(180, 180, 180)
+status.TextScaled = true
+status.Font = Enum.Font.Gotham
+status.Parent = frame
+
+local button = Instance.new("TextButton")
+button.Size = UDim2.new(0.9, 0, 0, 55)
+button.Position = UDim2.new(0.05, 0, 0, 80)
+button.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+button.Text = "TELEPORT SOCCERBALL TO ME"
+button.TextColor3 = Color3.new(1, 1, 1)
+button.TextScaled = true
+button.Font = Enum.Font.GothamBold
+button.Parent = frame
+
+Instance.new("UICorner", button).CornerRadius = UDim.new(0, 10)
+
+-- ==================== DRAG CODE ====================
+local dragging = false
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+title.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = frame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragging = false end
+        end)
+    end
+end)
+
+title.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and input == dragInput then
+        update(input)
+    end
+end)
+-- ===================================================
+
+-- Teleport logic
+button.MouseButton1Click:Connect(function()
+    -- Prevent spam while searching
+    button.Active = false
+    button.Text = "SEARCHING..."
+    button.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    status.Text = "Looking for SoccerBall..."
+
+    task.wait(0.2)
+
+    local character = player.Character or player.CharacterAdded:Wait()
+    local root = character:WaitForChild("HumanoidRootPart")
+
+    local found = {}
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") and obj.Name == "SoccerBall" then
+            table.insert(found, obj)
+        end
+    end
+
+    if #found == 0 then
+        status.Text = "No SoccerBall found!"
+        button.Text = "NOT FOUND"
+        button.BackgroundColor3 = Color3.fromRGB(180, 0, 0)
+    else
+        for i, ball in ipairs(found) do
+            ball.CFrame = root.CFrame * CFrame.new(0, 5 + (i-1) * 2, 0)   -- directly above you
+            ball.Velocity = Vector3.new(0, 0, 0)
+            if ball.Anchored then ball.Anchored = false end
+            print("Teleported SoccerBall #" .. i .. " → " .. ball:GetFullName())
+        end
+
+        status.Text = "Teleported " .. #found .. " SoccerBall(s)!"
+        button.Text = "DONE ✓"
+        button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    end
+
+    -- Reset button after 2 seconds (GUI stays open)
+    task.delay(2, function()
+        if button and button.Parent then
+            button.Text = "TELEPORT SOCCERBALL TO ME"
+            button.BackgroundColor3 = Color3.fromRGB(0, 170, 80)
+            status.Text = "Ready"
+            button.Active = true
+        end
+    end)
+end)
+
+print("✅ SoccerBall Teleporter loaded! GUI now stays open forever. Click as many times as you want!")
